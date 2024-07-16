@@ -87,7 +87,7 @@ EXAMPLES:
 		Hidden:       true,
 		OnUsageError: onUsageError,
 		Before:       setGlobalsFromContext,
-		Flags:        append(globalFlags, adminTierAddFlags...),
+		Flags:        append(globalFlags, adminTierAddMinioFlags...),
 		CustomHelpTemplate: `NAME:
   {{.HelpName}} - {{.Usage}}
 
