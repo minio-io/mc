@@ -325,8 +325,7 @@ func (c *S3Client) AddNotificationConfig(ctx context.Context, arn string, events
 		case "replica":
 			nc.AddEvents(notification.EventType("s3:Replication:*"))
 		case "ilm":
-			nc.AddEvents(notification.EventType("s3:ObjectRestore:*"))
-			nc.AddEvents(notification.EventType("s3:ObjectTransition:*"))
+			nc.AddEvents(notification.EventType("s3:ObjectRestore:*"), notification.ObjectTransitionAll, notification.ILMDelMarkerExpirationDelete)
 		case "scanner":
 			nc.AddEvents(notification.EventType("s3:Scanner:ManyVersions"))
 			nc.AddEvents(notification.EventType("s3:Scanner:BigPrefix"))
