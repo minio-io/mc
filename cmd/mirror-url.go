@@ -108,7 +108,7 @@ func matchExcludeOptions(excludeOptions []string, srcSuffix string, typ ClientUR
 	return false
 }
 
-func matchExcludeBucketOptions(excludeBuckets []string, srcSuffix string) bool {
+func matchBucketOptions(excludeBuckets, includeBuckets []string, srcSuffix string) bool {
 	if strings.HasPrefix(srcSuffix, "/") {
 		srcSuffix = srcSuffix[1:]
 	} else if runtime.GOOS == "windows" && strings.HasPrefix(srcSuffix, `\`) {
@@ -120,12 +120,24 @@ func matchExcludeBucketOptions(excludeBuckets []string, srcSuffix string) bool {
 	} else {
 		bucketName = strings.Split(srcSuffix, "/")[0]
 	}
+	// mirror all buckets
+	if bucketName == "" {
+		return false
+	}
 	for _, pattern := range excludeBuckets {
 		if wildcard.Match(pattern, bucketName) {
 			return true
 		}
 	}
-	return false
+	if len(includeBuckets) <= 0 {
+		return false
+	}
+	for _, pattern := range includeBuckets {
+		if wildcard.Match(pattern, bucketName) {
+			return false
+		}
+	}
+	return true
 }
 
 func deltaSourceTarget(ctx context.Context, sourceURL, targetURL string, opts mirrorOptions, URLsCh chan<- URLs) {
@@ -180,8 +192,8 @@ func deltaSourceTarget(ctx context.Context, sourceURL, targetURL string, opts mi
 			continue
 		}
 
-		// Skip the source bucket if it matches the Exclude options provided
-		if matchExcludeBucketOptions(opts.excludeBuckets, srcSuffix) {
+		// Skip the source bucket if it matches the provided exclude options or does not match the included options
+		if matchBucketOptions(opts.excludeBuckets, opts.includeBuckets, srcSuffix) {
 			continue
 		}
 
@@ -191,8 +203,8 @@ func deltaSourceTarget(ctx context.Context, sourceURL, targetURL string, opts mi
 			continue
 		}
 
-		// Skip the target bucket if it matches the Exclude options provided
-		if matchExcludeBucketOptions(opts.excludeBuckets, tgtSuffix) {
+		// Skip the target bucket if it matches the provided exclude options or does not match the included options
+		if matchBucketOptions(opts.excludeBuckets, opts.includeBuckets, tgtSuffix) {
 			continue
 		}
 
@@ -265,18 +277,18 @@ func deltaSourceTarget(ctx context.Context, sourceURL, targetURL string, opts mi
 }
 
 type mirrorOptions struct {
-	isFake, isOverwrite, activeActive                     bool
-	isWatch, isRemove, isMetadata                         bool
-	isRetriable                                           bool
-	isSummary                                             bool
-	skipErrors                                            bool
-	excludeOptions, excludeStorageClasses, excludeBuckets []string
-	encKeyDB                                              map[string][]prefixSSEPair
-	md5, disableMultipart                                 bool
-	olderThan, newerThan                                  string
-	storageClass                                          string
-	userMetadata                                          map[string]string
-	checksum                                              minio.ChecksumType
+	isFake, isOverwrite, activeActive                                     bool
+	isWatch, isRemove, isMetadata                                         bool
+	isRetriable                                                           bool
+	isSummary                                                             bool
+	skipErrors                                                            bool
+	excludeOptions, excludeStorageClasses, excludeBuckets, includeBuckets []string
+	encKeyDB                                                              map[string][]prefixSSEPair
+	md5, disableMultipart                                                 bool
+	olderThan, newerThan                                                  string
+	storageClass                                                          string
+	userMetadata                                                          map[string]string
+	checksum                                                              minio.ChecksumType
 }
 
 // Prepares urls that need to be copied or removed based on requested options.

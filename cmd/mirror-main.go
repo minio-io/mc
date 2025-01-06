@@ -109,6 +109,10 @@ var (
 			Usage: "exclude bucket(s) that match specified bucket name pattern",
 		},
 		cli.StringSliceFlag{
+			Name:  "include-bucket",
+			Usage: "mirror bucket(s) that match specified bucket name pattern",
+		},
+		cli.StringSliceFlag{
 			Name:  "exclude-storageclass",
 			Usage: "exclude object(s) that match the specified storage class",
 		},
@@ -205,22 +209,25 @@ EXAMPLES:
       Exclude test* buckets and backup* buckets when mirroring.
       {{.Prompt}} {{.HelpName}} --exclude-bucket 'test*' --exclude 'backup*' s3 ~/test
 
-  11. Mirror objects newer than 10 days from bucket test to a local folder.
+  11. Mirror test* buckets from aliased Amazon S3 cloud storage to a local folder.
+      {{.Prompt}} {{.HelpName}} --include-bucket 'test*' s3 ~/test
+
+  12. Mirror objects newer than 10 days from bucket test to a local folder.
       {{.Prompt}} {{.HelpName}} --newer-than 10d s3/test ~/localfolder
 
-  12. Mirror objects older than 30 days from Amazon S3 bucket test to a local folder.
+  13. Mirror objects older than 30 days from Amazon S3 bucket test to a local folder.
       {{.Prompt}} {{.HelpName}} --older-than 30d s3/test ~/test
 
-  13. Mirror server encrypted objects from Amazon S3 cloud storage to a bucket on Amazon S3 cloud storage
+  14. Mirror server encrypted objects from Amazon S3 cloud storage to a bucket on Amazon S3 cloud storage
       {{.Prompt}} {{.HelpName}} --enc-c "minio/archive=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDA" --enc-c "s3/archive=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5BBB" s3/archive/ minio/archive/ 
 
-  14. Update 'Cache-Control' header on all existing objects recursively.
+  15. Update 'Cache-Control' header on all existing objects recursively.
       {{.Prompt}} {{.HelpName}} --attr "Cache-Control=max-age=90000,min-fresh=9000" myminio/video-files myminio/video-files
 
-  15. Mirror a local folder recursively to Amazon S3 cloud storage and preserve all local file attributes.
+  16. Mirror a local folder recursively to Amazon S3 cloud storage and preserve all local file attributes.
       {{.Prompt}} {{.HelpName}} -a backup/ s3/archive
 
-  16. Cross mirror between sites in a active-active deployment.
+  17. Cross mirror between sites in a active-active deployment.
       Site-A: {{.Prompt}} {{.HelpName}} --active-active siteA siteB
       Site-B: {{.Prompt}} {{.HelpName}} --active-active siteB siteA
 `,
@@ -657,8 +664,8 @@ func (mj *mirrorJob) watchMirrorEvents(ctx context.Context, events []EventInfo) 
 		if matchExcludeOptions(mj.opts.excludeOptions, sourceSuffix, sourceURL.Type) {
 			continue
 		}
-		// Skip the bucket, if it matches the Exclude options provided
-		if matchExcludeBucketOptions(mj.opts.excludeBuckets, sourceSuffix) {
+		// Skip the bucket,  if it matches the provided exclude options or does not match the included options
+		if matchBucketOptions(mj.opts.excludeBuckets, mj.opts.includeBuckets, sourceSuffix) {
 			continue
 		}
 
@@ -1002,6 +1009,7 @@ func runMirror(ctx context.Context, srcURL, dstURL string, cli *cli.Context, enc
 		skipErrors:            cli.Bool("skip-errors"),
 		excludeOptions:        cli.StringSlice("exclude"),
 		excludeBuckets:        cli.StringSlice("exclude-bucket"),
+		includeBuckets:        cli.StringSlice("include-bucket"),
 		excludeStorageClasses: cli.StringSlice("exclude-storageclass"),
 		olderThan:             cli.String("older-than"),
 		newerThan:             cli.String("newer-than"),
@@ -1073,8 +1081,8 @@ func runMirror(ctx context.Context, srcURL, dstURL string, cli *cli.Context, enc
 					continue
 				}
 
-				// Skip create bucket, if it matches the Exclude options provided
-				if matchExcludeBucketOptions(mopts.excludeBuckets, sourceSuffix) {
+				// Skips bucket creation if it matches the provided exclusion options or does not match the included options
+				if matchBucketOptions(mopts.excludeBuckets, mj.opts.includeBuckets, sourceSuffix) {
 					continue
 				}
 
