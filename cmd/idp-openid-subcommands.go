@@ -416,11 +416,15 @@ func (i idpConfig) String() string {
 		return "Not configured."
 	}
 
+	enableStr := "on"
 	// Determine required width for key column.
 	fieldColWidth := 0
 	for _, kv := range i.Info {
 		if fieldColWidth < len(kv.Key) {
 			fieldColWidth = len(kv.Key)
+		}
+		if kv.Key == "enable" {
+			enableStr = kv.Value
 		}
 	}
 	// Add 1 for the colon-suffix in each entry.
@@ -439,7 +443,14 @@ func (i idpConfig) String() string {
 		PaddingLeft(1)
 
 	var lines []string
+	lines = append(lines, fmt.Sprintf("%s%s",
+		fieldColStyle.Render("enable:"),
+		valueColStyle.Render(enableStr),
+	))
 	for _, kv := range i.Info {
+		if kv.Key == "enable" {
+			continue
+		}
 		envStr := ""
 		if kv.IsCfg && kv.IsEnv {
 			envStr = " (environment)"
@@ -509,7 +520,7 @@ func idpEnableDisable(ctx *cli.Context, isOpenID, enable bool) error {
 		idpType = madmin.OpenidIDPCfg
 	}
 
-	configBody := "enable=on"
+	configBody := "enable="
 	if !enable {
 		configBody = "enable=off"
 	}
