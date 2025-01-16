@@ -141,8 +141,6 @@ github.com/minio/colorjson v1.0.8 h1:AS6gEQ1dTRYHmC4xuoodPDRILHP/9Wz5wYUGDQfPLpg
 github.com/minio/colorjson v1.0.8/go.mod h1:wrs39G/4kqNlGjwqHvPlAnXuc2tlPszo6JKdSBCLN8w=
 github.com/minio/filepath v1.0.0 h1:fvkJu1+6X+ECRA6G3+JJETj4QeAYO9sV43I79H8ubDY=
 github.com/minio/filepath v1.0.0/go.mod h1:/nRZA2ldl5z6jT9/KQuvZcQlxZIMQoFFQPvEXx9T/Bw=
-github.com/minio/madmin-go/v3 v3.0.85 h1:bP63oKd5YclvjuUw58BtE8cME0VAoZwvwUV50lEvES4=
-github.com/minio/madmin-go/v3 v3.0.85/go.mod h1:pMLdj9OtN0CANNs5tdm6opvOlDFfj0WhbztboZAjRWE=
 github.com/minio/md5-simd v1.1.2 h1:Gdi1DZK69+ZVMoNHRXJyNcxrMA4dSxoYHZSQbirFg34=
 github.com/minio/md5-simd v1.1.2/go.mod h1:MzdKDxYpY2BT9XQFocsiZf/NKVtR7nkE4RoEpN+20RM=
 github.com/minio/minio-go/v7 v7.0.83-0.20241230094935-5757f2c8544a h1:nPw29aor4WGYpmBZy5jQT/cW5wtFrG8tEOCNeltMcq8=
@@ -214,6 +212,8 @@ github.com/shoenig/go-m1cpu v0.1.6 h1:nxdKQNcEB6vzgA2E2bvzKIYRuNj7XNJ4S/aRSwKzFt
 github.com/shoenig/go-m1cpu v0.1.6/go.mod h1:1JJMcUBvfNwpq05QDQVAnx3gUHr9IYF7GNg9SUEw2VQ=
 github.com/shoenig/test v0.6.4 h1:kVTaSd7WLz5WZ2IaoM0RSzRsUD+m8wRR+5qvntpn4LU=
 github.com/shoenig/test v0.6.4/go.mod h1:byHiCGXqrVaflBLAMq/srcZIHynQPQgeyvkvXnjqq0k=
+github.com/shtripat/madmin-go/v3 v3.0.0-20250116051913-b8d86bb7af99 h1:jfUfO/RWNzkTlQZeMig4egxdQbi7bn9fYkJO53hjhA0=
+github.com/shtripat/madmin-go/v3 v3.0.0-20250116051913-b8d86bb7af99/go.mod h1:pMLdj9OtN0CANNs5tdm6opvOlDFfj0WhbztboZAjRWE=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
