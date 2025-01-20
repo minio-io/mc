@@ -38,6 +38,10 @@ var (
 			Usage: "comment to be posted on the issue along with the file",
 		},
 		cli.BoolFlag{
+			Name:  "enc",
+			Usage: "encrypt content with key only accessible to minio employees",
+		},
+		cli.BoolFlag{
 			Name:   "dev",
 			Usage:  "Development mode",
 			Hidden: true,
@@ -137,6 +141,7 @@ func execSupportUpload(ctx *cli.Context, alias, apiKey string) {
 		ReqURL:       reqURL,
 		Headers:      headers,
 		AutoCompress: true,
+		AutoEncrypt:  ctx.Bool("enc"),
 		Params:       params,
 	}).UploadFileToSubnet()
 	if e != nil {

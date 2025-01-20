@@ -18,6 +18,10 @@
 package cmd
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -27,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/minio/madmin-go/v3/estream"
 )
 
 // SubnetFileUploader - struct to upload files to SUBNET
@@ -39,6 +44,8 @@ type SubnetFileUploader struct {
 	Headers           SubnetHeaders // headers to be sent in the request
 	AutoCompress      bool          // whether to compress (zst) the file before uploading
 	DeleteAfterUpload bool          // whether to delete the file after successful upload
+	AutoEncrypt       bool          // Encrypt content.
+	PubKey            []byte        // Custom public encryption key.
 }
 
 // UploadFileToSubnet - uploads the file to SUBNET
@@ -80,6 +87,10 @@ func (i *SubnetFileUploader) updateParams() {
 		i.filename += ".zst"
 		i.Params.Add("auto-compression", "zstd")
 	}
+	if i.AutoEncrypt || len(i.PubKey) >= 0 {
+		i.Params.Add("encrypted", "true")
+		i.filename += ".enc"
+	}
 
 	i.Params.Add("filename", i.filename)
 	i.ReqURL += "?" + i.Params.Encode()
@@ -97,15 +108,14 @@ func (i *SubnetFileUploader) subnetUploadReq() (*http.Request, error) {
 			part io.Writer
 			e    error
 		)
+		var errfn func(string) error
 		defer func() {
 			mwriter.Close()
 			w.CloseWithError(e)
+			if e != nil && errfn != nil {
+				errfn(e.Error())
+			}
 		}()
-
-		part, e = mwriter.CreateFormFile("file", i.filename)
-		if e != nil {
-			return
-		}
 
 		file, e := os.Open(i.FilePath)
 		if e != nil {
@@ -113,8 +123,47 @@ func (i *SubnetFileUploader) subnetUploadReq() (*http.Request, error) {
 		}
 		defer file.Close()
 
+		part, e = mwriter.CreateFormFile("file", i.filename)
+		if e != nil {
+			return
+		}
+		if i.AutoEncrypt || len(i.PubKey) > 0 {
+			sw := estream.NewWriter(part)
+			defer sw.Close()
+			errfn = sw.AddError
+			key := i.PubKey
+			if key == nil {
+				key, e = base64.StdEncoding.DecodeString(defaultPublicKey)
+				if e != nil {
+					return
+				}
+			}
+			pk, e := bytesToPublicKey(key)
+			if e != nil {
+				sw.AddError(e.Error())
+				return
+			}
+			e = sw.AddKeyEncrypted(pk)
+			if e != nil {
+				sw.AddError(e.Error())
+				return
+			}
+			wc, e := sw.AddEncryptedStream(strings.TrimSuffix(i.filename, ".enc"), nil)
+			if e != nil {
+				sw.AddError(e.Error())
+				return
+			}
+			defer wc.Close()
+			part = wc
+		}
+
 		if i.AutoCompress {
 			z, _ := zstd.NewWriter(part, zstd.WithEncoderConcurrency(2))
+			sz, err := file.Stat()
+			if err == nil {
+				// Set file size if we can.
+				z.ResetContentSize(part, sz.Size())
+			}
 			defer z.Close()
 			_, e = z.ReadFrom(file)
 		} else {
@@ -129,4 +178,16 @@ func (i *SubnetFileUploader) subnetUploadReq() (*http.Request, error) {
 	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
+}
+
+func bytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(pub)
+	if block != nil {
+		pub = block.Bytes
+	}
+	key, err := x509.ParsePKCS1PublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
